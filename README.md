@@ -11,5 +11,16 @@ A microservice written in Golang with gRPC and JSON transport for notifying cust
 - Redis - provide a cached copy of outages 
 - MySQL - provide permanent persistance
 
+## Setup 
+### GRPC and Protobuffer package dependencies
+```shell
+go get -u google.golang.org/grpc/cmd/protoc-gen-go-grpc go install google.golang.org/grpc/cmd/protoc-gen-go-grpc
+```
+NOTE: You should add the protoc-gen-go-grpc to your PATH
+
+```shell
+PATH="${PATH}:${HOME}/go/bin"
+```
+
 ## References
  - Mario Carion, Domain Driven Design - [Youtube](https://www.youtube.com/watch?v=LUvid5TJ81Y)
