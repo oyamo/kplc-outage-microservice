@@ -1,5 +1,6 @@
 # kplc-outage-microservice
 
+A microservice written in Golang with gRPC and JSON transport for notifying customers - users - about planned outages in their regions
 
 ## Services
  - Notification Service - Collect customer details and send notifications
