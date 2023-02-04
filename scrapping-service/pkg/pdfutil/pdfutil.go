@@ -5,7 +5,7 @@ import (
 	"os/exec"
 )
 
-func ReadPdf(path string) (bytes.Buffer, error) {
+func (*pdfReader) readPdf(path string) (bytes.Buffer, error) {
 	cmd := exec.Command("pdftotext", path, "-")
 	var out bytes.Buffer
 	cmd.Stdout = &out
