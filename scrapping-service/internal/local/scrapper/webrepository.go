@@ -14,4 +14,5 @@ type Link struct {
 
 type WebRepository interface {
 	GetLinks(page string) ([]Link, error)
+	GetLinksFromLead(lead string) ([]Link, error)
 }

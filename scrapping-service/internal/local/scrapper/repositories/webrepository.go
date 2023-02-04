@@ -15,8 +15,30 @@ type webrepo struct {
 
 func (w webrepo) GetLinks(page string) ([]scrapper.Link, error) {
 	c := colly.NewCollector()
-	c.OnHTML("div.blogSumary", func(el *colly.HTMLElement) {
-		log.Println(el)
+	var allLinks = make([]scrapper.Link, 0)
+	c.OnHTML(".items div.blogSumary", func(el *colly.HTMLElement) {
+		// Get pdf links
+		var links = make([]scrapper.Link, 0)
+		el.ForEach(".intro li a", func(i int, element *colly.HTMLElement) {
+			var link = element.Attr("href")
+			if link != "" {
+				links = append(links, scrapper.Link{
+					Type: scrapper.LinkTypePDF,
+					Url:  link,
+				})
+			}
+		})
+
+		if len(links) == 0 {
+			var link = el.ChildAttr(".generictitle a", "href")
+			if link != "" {
+				links = append(links, scrapper.Link{
+					Type: scrapper.LinkTypeLead,
+					Url:  link,
+				})
+			}
+		}
+		allLinks = append(allLinks, links...)
 	})
 
 	err := c.Visit(page)
@@ -24,7 +46,7 @@ func (w webrepo) GetLinks(page string) ([]scrapper.Link, error) {
 		log.Println(err)
 		return nil, err
 	}
-	return nil, err
+	return allLinks, nil
 }
 
 func NewWebRepository() scrapper.WebRepository {
