@@ -2,8 +2,12 @@ package repositories
 
 import (
 	"github.com/gocolly/colly"
+	"github.com/google/uuid"
 	"github.com/oyamo/kplc-outage-microservice/scrapping-service/internal/local/scrapper"
+	"io"
 	"log"
+	"net/http"
+	"os"
 )
 
 const (
@@ -11,6 +15,55 @@ const (
 )
 
 type webrepo struct {
+}
+
+func (w webrepo) GenerateTmpPDF(url string) (tempPath string, err error) {
+	// Get a cache dir for temp storage
+
+	var tempDir string
+	if tempDir, err = os.UserCacheDir(); err != nil {
+		tempDir = os.TempDir()
+		if tempDir == "" {
+			tempDir = "." //use current directory
+		}
+	}
+	// create an outstream
+	fileName := tempDir + "/" + uuid.NewString() + ".pdf"
+	out, err := os.Create(fileName)
+	defer out.Close()
+	// since no special parameters are required as at the time of writing this code
+	// No need of creating a http client
+	resp, err := http.Get(url)
+	if err != nil {
+		return "", err
+	}
+
+	defer resp.Body.Close()
+	io.Copy(out, resp.Body)
+	return "", nil
+}
+
+func (w webrepo) GetLinksFromLead(lead string) ([]scrapper.Link, error) {
+	allLinks := make([]scrapper.Link, 0)
+	c := colly.NewCollector()
+	c.OnHTML(".attachments", func(element *colly.HTMLElement) {
+		hyperLinks := element.ChildAttrs("a", "href")
+		for _, v := range hyperLinks {
+			if len(v) > 12 && v[len(v)-4:] == ".pdf" && v[:8] == "https://" {
+				allLinks = append(allLinks, scrapper.Link{
+					Url:  v,
+					Type: scrapper.LinkTypePDF,
+				})
+			}
+		}
+	})
+
+	err := c.Visit(lead)
+	if err != nil {
+		return nil, err
+	}
+
+	return allLinks, nil
 }
 
 func (w webrepo) GetLinks(page string) ([]scrapper.Link, error) {
@@ -21,7 +74,7 @@ func (w webrepo) GetLinks(page string) ([]scrapper.Link, error) {
 		var links = make([]scrapper.Link, 0)
 		el.ForEach(".intro li a", func(i int, element *colly.HTMLElement) {
 			var link = element.Attr("href")
-			if link != "" {
+			if len(link) > 12 && link[len(link)-4:] == ".pdf" && link[:8] == "https://" {
 				links = append(links, scrapper.Link{
 					Type: scrapper.LinkTypePDF,
 					Url:  link,
