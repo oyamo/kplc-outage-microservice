@@ -9,7 +9,7 @@ type pdfReader struct {
 }
 
 type BlackoutResult struct {
-	Region []Region
+	Regions []Region
 }
 
 type Region struct {
@@ -23,9 +23,10 @@ type County struct {
 }
 
 type BlackOutArea struct {
-	Name  string
-	Time  time.Time
-	Towns []string
+	Name      string
+	TimeStart time.Time
+	TimeStop  time.Time
+	Towns     []string
 }
 
 type PdfReader interface {

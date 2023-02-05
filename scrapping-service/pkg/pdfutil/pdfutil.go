@@ -3,14 +3,17 @@ package pdfutil
 import (
 	"bufio"
 	"bytes"
+	"log"
 	"os/exec"
+	"reflect"
 	"strings"
 	"time"
 )
 
 var (
 	skipLines = map[string]bool{
-		"Interruption of Electricity Supply":                                true,
+		"Interruption of":    true,
+		"Electricity Supply": true,
 		"Notice is hereby given under rule 27 of the Electric Power Rules":  true,
 		"That the electricity supply will be interrupted as here under:":    true,
 		"(It is necessary to interrupt supply periodically in order to":     true,
@@ -22,11 +25,6 @@ var (
 		"Interruption Notices may be viewed at": true,
 		"www.kplc.co.ke":                        true,
 	}
-
-	regionIndicator = "REGION"
-	countyIndicator = "PARTS OF"
-	dateIndicator   = "DATE:"
-	timeIndicator   = "TIME:"
 )
 
 //Useful constants
@@ -35,75 +33,115 @@ func (r *pdfReader) scanTxt(buffer bytes.Buffer) (*BlackoutResult, error) {
 	scanner := bufio.NewScanner(bytes.NewReader(buffer.Bytes()))
 
 	var result BlackoutResult
-	var curRegion *Region
-	var curCounty *County
-	var curArea *BlackOutArea
+	var curRegion Region
+	var curCounty County
+	var curArea BlackOutArea
 
 	for scanner.Scan() {
 		line := scanner.Text()
 
-		if line == "" {
+		if line == "" || skipLines[line] {
 			continue
 		}
 
 		if strings.HasSuffix(line, "REGION") {
 			// We have found a new region
-			curRegion = &Region{
+			if !reflect.DeepEqual(curRegion, Region{}) {
+				result.Regions = append(result.Regions, curRegion)
+			}
+			curRegion = Region{
 				Name:     strings.TrimSuffix(line, " REGION"),
 				Counties: []County{},
 			}
-			result.Region = append(result.Region, *curRegion)
 			continue
 		}
 
 		if strings.HasPrefix(line, "PARTS OF ") {
 			// We have found a new county
-			curCounty = &County{
-				Name: strings.TrimPrefix(line, "PARTS OF "),
+			if !reflect.DeepEqual(curCounty, County{}) {
+				curRegion.Counties = append(curRegion.Counties, curCounty)
 			}
-			curRegion.Counties = append(curRegion.Counties, *curCounty)
+			curCounty = County{
+				Name:  strings.TrimPrefix(line, "PARTS OF "),
+				Areas: make([]BlackOutArea, 0),
+			}
 			continue
 		}
 
 		if strings.HasPrefix(line, "AREA: ") {
 			// We have found a new blackout area
-			curArea = &BlackOutArea{
-				Name: line[6:],
+			if !reflect.DeepEqual(curArea, BlackOutArea{}) {
+				curCounty.Areas = append(curCounty.Areas, curArea)
 			}
-			curCounty.Areas = append(curCounty.Areas, *curArea)
+			curArea = BlackOutArea{
+				Name:  line[6:],
+				Towns: make([]string, 0),
+			}
 			continue
 		}
 
 		if strings.HasPrefix(line, "DATE: ") {
 			// We have found the blackout date
-			dateStr := line[6:]
-			t, err := time.Parse("Monday 02.01.2006", dateStr)
+			dateStr := line[len(line)-10:]
+			t, err := time.Parse("02.01.2006", dateStr)
 			if err != nil {
-				return nil, err
+				if t, err = time.Parse("02.01,2006", dateStr); err != nil {
+					return nil, err
+				}
 			}
-			curArea.Time = t
+			curArea.TimeStart = t
+			curArea.TimeStop = t
 			continue
 		}
 
 		if strings.HasPrefix(line, "TIME: ") {
+			log.Println(line)
 			// We have found the blackout time
 			timeStr := line[6:]
-			t, err := time.Parse("3:04 P.M.", timeStr)
+			timeStart := timeStr[:9]
+			timeStop := timeStr[len(timeStr)-9:]
+			timeStop = strings.TrimSpace(timeStop)
+
+			// Clean Date to Kitchen time
+
+			// Remove last Dot
+			timeStart = timeStart[:len(timeStart)-1]
+			timeStop = timeStop[:len(timeStop)-1]
+
+			// Remove space
+			timeStart = timeStart[:4] + timeStart[5:]
+			timeStart = timeStart[:5] + timeStart[6:]
+			timeStop = timeStop[:4] + timeStop[5:]
+			timeStop = timeStop[:5] + timeStop[6:]
+			_ = timeStart
+			t, err := time.Parse("3.04PM", timeStart)
 			if err != nil {
-				return nil, err
+				if t, err = time.Parse("3.04PM", timeStart); err != nil {
+					return nil, err
+				}
 			}
-			curArea.Time = curArea.Time.Add(t.Sub(time.Date(0, 0, 0, 0, 0, 0, 0, time.UTC)))
+
+			t1, err := time.Parse("3.04PM", timeStop)
+			if err != nil {
+				if t1, err = time.Parse("3.04PM", timeStart); err != nil {
+					return nil, err
+				}
+			}
+			curArea.TimeStart = curArea.TimeStart.Add(t.Sub(time.Date(0, 1, 1, 0, 0, 0, 0, time.UTC)))
+			curArea.TimeStop = curArea.TimeStop.Add(t1.Sub(time.Date(0, 1, 1, 0, 0, 0, 0, time.UTC)))
 			continue
 		}
 
 		// If we reach here, we have found a list of towns
 		curArea.Towns = append(curArea.Towns, strings.Split(line, ", ")...)
+
 	}
 
 	if err := scanner.Err(); err != nil {
 		return nil, err
 	}
 
+	log.Printf("%+v", result)
 	return &result, nil
 }
 
