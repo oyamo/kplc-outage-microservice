@@ -1,7 +1,10 @@
 package repositories
 
 import (
+	"encoding/json"
+	"fmt"
 	"github.com/oyamo/kplc-outage-microservice/scrapping-service/internal/local/scrapper"
+	"github.com/oyamo/kplc-outage-microservice/scrapping-service/pkg/pdfutil"
 	"reflect"
 	"testing"
 )
@@ -66,6 +69,54 @@ func Test_webrepo_GetLinksFromLead(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("GetLinksFromLead() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_webrepo_GetBlackoutResultFromPdf(t *testing.T) {
+	w := webrepo{}
+	pdfUrls, err := w.GetLinks(KplcBase)
+	if err != nil {
+		t.Fatal("fetch pdfs", err)
+	}
+	pdfUrl := pdfUrls[0].Url
+	pdfPath, err := w.GenerateTmpPDF(pdfUrl)
+	t.Log("pdfurl", pdfPath)
+
+	if err != nil {
+		t.Fatal("failed:", err)
+	}
+
+	type args struct {
+		path string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    *pdfutil.BlackoutResult
+		wantErr bool
+	}{
+		{
+			name: "All fns",
+			args: args{
+				path: pdfPath,
+			},
+			want:    nil,
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := w.GetBlackoutResultFromPdf(tt.args.path)
+			bytes, err := json.Marshal(got)
+			fmt.Println(string(bytes))
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GetBlackoutResultFromPdf() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("GetBlackoutResultFromPdf() got = %v, want %v", got, tt.want)
 			}
 		})
 	}

@@ -3,138 +3,372 @@ package pdfutil
 import (
 	"bufio"
 	"bytes"
+	"errors"
+	"fmt"
 	"log"
 	"os/exec"
 	"reflect"
+	"regexp"
+	"strconv"
 	"strings"
 	"time"
 )
 
 var (
-	skipLines = map[string]bool{
-		"Interruption of":    true,
-		"Electricity Supply": true,
-		"Notice is hereby given under rule 27 of the Electric Power Rules":  true,
-		"That the electricity supply will be interrupted as here under:":    true,
-		"(It is necessary to interrupt supply periodically in order to":     true,
-		"facilitate maintenance and upgrade of power lines to the network;": true,
-		"to connect new customers or to replace power lines during road":    true,
-		"construction, etc.)":                   true,
-		"For further information, contact":      true,
-		"The nearest Kenya Power office":        true,
-		"Interruption Notices may be viewed at": true,
-		"www.kplc.co.ke":                        true,
-	}
+	result    BlackoutResult
+	curRegion Region
+	curCounty County
+	curArea   BlackOutArea
 )
 
-//Useful constants
+func numberOfPages(filename string) (int, error) {
+	// Run the pdfinfo command
+	cmd := exec.Command("pdfinfo", filename)
+	var out bytes.Buffer
+	var outErr bytes.Buffer
 
-func (r *pdfReader) scanTxt(buffer bytes.Buffer) (*BlackoutResult, error) {
-	scanner := bufio.NewScanner(bytes.NewReader(buffer.Bytes()))
+	cmd.Stdout = &out
+	cmd.Stderr = &outErr
 
-	var result BlackoutResult
-	var curRegion Region
-	var curCounty County
-	var curArea BlackOutArea
+	err := cmd.Run()
+
+	if err != nil {
+		return 0, err
+	}
+
+	scanner := bufio.NewScanner(&out)
+	for scanner.Scan() {
+		line := scanner.Text()
+		if strings.HasPrefix(line, "Pages:") {
+			countStr := strings.TrimPrefix(line, "Pages:")
+			countStr = strings.TrimSpace(countStr)
+			coountInt, err := strconv.Atoi(countStr)
+			if err != nil {
+				return 0, err
+			}
+			return coountInt, nil
+		}
+	}
+	return 0, nil
+}
+
+func oneColAlign(buffer bytes.Buffer) bytes.Buffer {
+	var top bytes.Buffer
+	var bottom bytes.Buffer
+	var scanner = bufio.NewScanner(bytes.NewReader(buffer.Bytes()))
+	spaceRegex, _ := regexp.Compile(" {2,}")
 
 	for scanner.Scan() {
 		line := scanner.Text()
+		segments := spaceRegex.Split(line, -1)
 
-		if line == "" || skipLines[line] {
-			continue
+		// first instance
+		segmentSize := len(segments)
+		if segmentSize == 1 {
+			top.WriteString(segments[0])
+			top.WriteByte('\n')
+		} else if (segmentSize == 2) && ((segments[0] == "" &&
+			segments[1] != "") || (segments[1] == "" &&
+			segments[0] != "")) {
+			top.WriteString(segments[0])
+			top.WriteByte('\n')
+			bottom.WriteString(segments[1])
+			bottom.WriteByte('\n')
+		} else if segmentSize == 2 && strings.HasPrefix(segments[0], "DATE:") {
+			top.WriteString(segments[0])
+			top.WriteByte('\n')
+			top.WriteString(segments[1])
+			top.WriteByte('\n')
+		} else if segmentSize == 3 && strings.HasPrefix(segments[2], "TIME:") {
+			top.WriteString(segments[0])
+			top.WriteByte('\n')
+			bottom.WriteString(segments[1])
+			bottom.WriteByte('\n')
+			bottom.WriteString(segments[2])
+			bottom.WriteByte('\n')
+		} else if segmentSize == 3 && strings.HasPrefix(segments[0], "DATE:") {
+			bottom.WriteString(segments[2])
+			bottom.WriteByte('\n')
+			top.WriteString(segments[0])
+			top.WriteByte('\n')
+			top.WriteString(segments[1])
+			top.WriteByte('\n')
+		} else if segmentSize == 4 && strings.HasPrefix(segments[0], "DATE:") &&
+			segmentSize == 4 && strings.HasPrefix(segments[2], "DATE:") {
+			bottom.WriteString(segments[2])
+			bottom.WriteByte('\n')
+			bottom.WriteString(segments[3])
+			bottom.WriteByte('\n')
+			top.WriteString(segments[0])
+			top.WriteByte('\n')
+			top.WriteString(segments[1])
+			top.WriteByte('\n')
+		} else if segmentSize == 2 {
+			bottom.WriteString(segments[1])
+			bottom.WriteByte('\n')
+			top.WriteString(segments[0])
+			top.WriteByte('\n')
+		} else {
+			log.Printf("%#v", segments)
+		}
+	}
+
+	// combine the top and bottom
+	top.Write(bottom.Bytes())
+	return top
+}
+
+func cleanTime(t string) (res string) {
+
+	if strings.HasSuffix(t, " A.M.") {
+		res = strings.TrimSuffix(t, " A.M.")
+		res += "AM"
+	}
+	if strings.HasSuffix(t, " P.M.") {
+		res = strings.TrimSuffix(t, " P.M.")
+		res += "PM"
+	}
+
+	res = strings.Replace(res, ".", ":", 1)
+
+	builder := strings.Builder{}
+	// Clear decoding issues
+	for r := range res {
+		if (res[r] >= '0' && res[r] <= '9') ||
+			res[r] == ':' || res[r] == 'P' ||
+			res[r] == 'M' || res[r] == 'A' {
+			builder.WriteByte(res[r])
+		}
+	}
+
+	res = builder.String()
+	return
+}
+func formatTime(t string) (startTime string, stopTime string, err error) {
+	times := bytes.Index([]byte(t), []byte(" – "))
+	if times == -1 {
+		times = bytes.Index([]byte(t), []byte(" - "))
+		if times == -1 {
+			return "", "", errors.New("invalid time - " + t)
+		}
+	}
+
+	startTime = t[:times]
+	stopTime = t[times+3:]
+
+	// trim time
+	startTime = startTime[len("TIME: "):]
+	startTime = cleanTime(startTime)
+	stopTime = cleanTime(stopTime)
+	return
+}
+
+//Useful constants
+
+func parseRegion(line string, curRegion *Region, result *BlackoutResult) bool {
+
+	if strings.HasSuffix(line, "REGION") {
+		// We have found a new region
+		region := strings.TrimSuffix(line, " REGION")
+
+		//replace hanging counties;
+		lastCounty := -1
+		//reduce chances of panic
+		if len(curRegion.Counties) > 0 {
+			lastCounty += len(curRegion.Counties)
 		}
 
-		if strings.HasSuffix(line, "REGION") {
-			// We have found a new region
-			if !reflect.DeepEqual(curRegion, Region{}) {
-				result.Regions = append(result.Regions, curRegion)
-			}
-			curRegion = Region{
-				Name:     strings.TrimSuffix(line, " REGION"),
-				Counties: []County{},
-			}
-			continue
-		}
-
-		if strings.HasPrefix(line, "PARTS OF ") {
-			// We have found a new county
-			if !reflect.DeepEqual(curCounty, County{}) {
+		// check if the current county is hanging
+		if lastCounty > -1 {
+			if curRegion.Counties[lastCounty].Name != curCounty.Name &&
+				curCounty.Name != "" && curRegion.Name != "" {
 				curRegion.Counties = append(curRegion.Counties, curCounty)
+				curCounty = County{}
 			}
-			curCounty = County{
-				Name:  strings.TrimPrefix(line, "PARTS OF "),
-				Areas: make([]BlackOutArea, 0),
+		}
+
+		// lastly check if current region is empty and there is a county hanging
+		if lastCounty == -1 && curCounty.Name != "" && curRegion.Name != "" {
+			curRegion.Counties = append(curRegion.Counties, curCounty)
+			curCounty = County{}
+		}
+
+		// Now add the region to list of regions
+		if curRegion.Name != "" || len(curRegion.Counties) != 0 {
+			result.Regions = append(result.Regions, *curRegion)
+
+		}
+
+		*curRegion = Region{
+			Name:     region,
+			Counties: []County{},
+		}
+
+		return true
+	}
+	return false
+}
+
+func parseCounty(line string, curCounty *County, curRegion *Region) bool {
+	if strings.HasPrefix(line, "PARTS OF ") {
+		// We have found a new county
+		if !reflect.DeepEqual(curCounty, County{}) && curCounty.Name != "" {
+			curRegion.Counties = append(curRegion.Counties, *curCounty)
+		}
+		*curCounty = County{
+			Name:  strings.TrimPrefix(line, "PARTS OF "),
+			Areas: make([]BlackOutArea, 0),
+		}
+
+		return true
+	}
+
+	return false
+}
+
+func parseArea(line string, curArea *BlackOutArea, curCounty *County) bool {
+	if strings.HasPrefix(line, "AREA: ") {
+		area := line[6:]
+		// We have found a new blackout area
+		if !reflect.DeepEqual(curArea, BlackOutArea{}) && curArea.Name != "" {
+			if len(curCounty.Areas) == 0 {
+				curCounty.Areas = append(curCounty.Areas, *curArea)
+			} else if curCounty.Areas[len(curCounty.Areas)-1].Name != curArea.Name {
+				curCounty.Areas = append(curCounty.Areas, *curArea)
 			}
+		}
+
+		// Reinitialise for another entry
+		*curArea = BlackOutArea{
+			Name:  area,
+			Towns: make([]string, 0),
+		}
+		return true
+	}
+	return false
+}
+
+func parseDate(line string, curArea *BlackOutArea) (bool, error) {
+	if strings.HasPrefix(line, "DATE: ") {
+		// We have found the blackout date
+		dateStr := line[len(line)-10:]
+		t, err := time.Parse("02.01.2006", dateStr)
+		if err != nil {
+			if t, err = time.Parse("02.01,2006", dateStr); err != nil {
+				log.Println("error parsing date", err)
+				return true, err
+			}
+		}
+		curArea.TimeStart = t
+		curArea.TimeStop = t
+		return true, nil
+	}
+
+	return false, nil
+}
+
+func parseTime(line string, curArea *BlackOutArea) (bool, error) {
+	if strings.HasPrefix(line, "TIME: ") {
+		// We have found the blackout time
+
+		timeStart, timeStop, err := formatTime(line)
+		if err != nil {
+
+			return true, err
+		}
+		t, err := time.Parse(time.Kitchen, timeStart)
+		if err != nil {
+			return true, err
+		}
+
+		t1, err := time.Parse(time.Kitchen, timeStop)
+		if err != nil {
+			return true, err
+		}
+
+		curArea.TimeStart = curArea.TimeStart.Add(t.Sub(time.Date(0, 1, 1, 0, 0, 0, 0, time.UTC)))
+		curArea.TimeStop = curArea.TimeStop.Add(t1.Sub(time.Date(0, 1, 1, 0, 0, 0, 0, time.UTC)))
+		return true, nil
+	}
+
+	return false, nil
+}
+
+func crunchSplitFunc(data []byte, atEOF bool) (advance int, token []byte, err error) {
+
+	// Return nothing if at end of file and no data passed
+	if atEOF && len(data) == 0 {
+		return 0, nil, nil
+	}
+
+	// Find the index of the input of a newline followed by a
+	// pound sign.
+	if i := strings.Index(string(data), "\n"); i >= 0 {
+		return i + 1, data[0:i], nil
+	}
+
+	// If at end of file with data return the data
+	if atEOF {
+		return len(data), data, nil
+	}
+
+	return
+}
+func scanTxt(buffer bytes.Buffer) (*BlackoutResult, error) {
+
+	scanner := bufio.NewScanner(strings.NewReader(buffer.String()))
+	scanner.Split(crunchSplitFunc)
+	counter := 0
+	for scanner.Scan() {
+		line := scanner.Text()
+		counter++
+		log.Println(line, counter)
+		if parseRegion(line, &curRegion, &result) ||
+			parseCounty(line, &curCounty, &curRegion) ||
+			parseArea(line, &curArea, &curCounty) {
 			continue
 		}
 
-		if strings.HasPrefix(line, "AREA: ") {
-			// We have found a new blackout area
-			if !reflect.DeepEqual(curArea, BlackOutArea{}) {
-				curCounty.Areas = append(curCounty.Areas, curArea)
-			}
-			curArea = BlackOutArea{
-				Name:  line[6:],
-				Towns: make([]string, 0),
-			}
+		parsedDate, err := parseDate(line, &curArea)
+		if err != nil {
+			return nil, err
+		}
+
+		if parsedDate {
 			continue
 		}
 
-		if strings.HasPrefix(line, "DATE: ") {
-			// We have found the blackout date
-			dateStr := line[len(line)-10:]
-			t, err := time.Parse("02.01.2006", dateStr)
-			if err != nil {
-				if t, err = time.Parse("02.01,2006", dateStr); err != nil {
-					return nil, err
+		parsedTime, err := parseTime(line, &curArea)
+		if err != nil {
+			return nil, err
+		}
+
+		if parsedTime {
+			for scanner.Scan() {
+				line = scanner.Text()
+				log.Println(line)
+				// If we reach here, we have found a list of towns
+				towns := strings.Split(line, ", ")
+				curArea.Towns = append(curArea.Towns, towns...)
+				if strings.Contains(line, "customers") {
+					break
 				}
 			}
-			curArea.TimeStart = t
-			curArea.TimeStop = t
-			continue
-		}
-
-		if strings.HasPrefix(line, "TIME: ") {
-			log.Println(line)
-			// We have found the blackout time
-			timeStr := line[6:]
-			timeStart := timeStr[:9]
-			timeStop := timeStr[len(timeStr)-9:]
-			timeStop = strings.TrimSpace(timeStop)
-
-			// Clean Date to Kitchen time
-
-			// Remove last Dot
-			timeStart = timeStart[:len(timeStart)-1]
-			timeStop = timeStop[:len(timeStop)-1]
-
-			// Remove space
-			timeStart = timeStart[:4] + timeStart[5:]
-			timeStart = timeStart[:5] + timeStart[6:]
-			timeStop = timeStop[:4] + timeStop[5:]
-			timeStop = timeStop[:5] + timeStop[6:]
-			_ = timeStart
-			t, err := time.Parse("3.04PM", timeStart)
-			if err != nil {
-				if t, err = time.Parse("3.04PM", timeStart); err != nil {
-					return nil, err
-				}
+			// append area
+			if curCounty.Name == "" {
+				curCounty.Name = curRegion.Name
 			}
 
-			t1, err := time.Parse("3.04PM", timeStop)
-			if err != nil {
-				if t1, err = time.Parse("3.04PM", timeStart); err != nil {
-					return nil, err
-				}
-			}
-			curArea.TimeStart = curArea.TimeStart.Add(t.Sub(time.Date(0, 1, 1, 0, 0, 0, 0, time.UTC)))
-			curArea.TimeStop = curArea.TimeStop.Add(t1.Sub(time.Date(0, 1, 1, 0, 0, 0, 0, time.UTC)))
-			continue
+			curCounty.Areas = append(curCounty.Areas, curArea)
 		}
+	}
 
-		// If we reach here, we have found a list of towns
-		curArea.Towns = append(curArea.Towns, strings.Split(line, ", ")...)
-
+	if len(result.Regions) == 0 && curRegion.Name != "" {
+		curRegion.Counties = append(curRegion.Counties, curCounty)
+		result.Regions = append(result.Regions, curRegion)
+	} else if result.Regions[len(result.Regions)-1].Name != curRegion.Name {
+		curRegion.Counties = append(curRegion.Counties, curCounty)
+		result.Regions = append(result.Regions, curRegion)
 	}
 
 	if err := scanner.Err(); err != nil {
@@ -145,13 +379,51 @@ func (r *pdfReader) scanTxt(buffer bytes.Buffer) (*BlackoutResult, error) {
 	return &result, nil
 }
 
-func (*pdfReader) readPdf(path string) (bytes.Buffer, error) {
-	cmd := exec.Command("pdftotext", path, "-")
+func getPdfBytes(path string, page int) (bytes.Buffer, error) {
+	fpage := fmt.Sprintf("-f %d", page)
+	lpage := fmt.Sprintf("-l %d", page)
+	args := []string{"-layout", fpage, lpage, path, "-"}
+	cmd := exec.Command("pdftotext", args...)
+	cmdString := cmd.String()
+	cmd = exec.Command("sh", "-c", cmdString)
 	var out bytes.Buffer
+	var outErr bytes.Buffer
 	cmd.Stdout = &out
-	err := cmd.Run()
+	cmd.Stderr = &outErr
+	err := cmd.Start()
 	if err != nil {
+		log.Println(cmd.String())
+		return out, err
+	}
+
+	if err := cmd.Wait(); err != nil {
+		log.Println(cmd.String())
+		log.Println(outErr.String())
 		return out, err
 	}
 	return out, nil
+}
+
+func ScanPDF(path string) (*BlackoutResult, error) {
+	var mainBuffer bytes.Buffer
+
+	numPages, err := numberOfPages(path)
+	if err != nil {
+		return nil, err
+	}
+
+	for i := 1; i <= numPages; i++ {
+		buffer, err := getPdfBytes(path, i)
+		if err != nil {
+			return nil, err
+		}
+		rdBuffer := oneColAlign(buffer)
+		mainBuffer.Write(rdBuffer.Bytes())
+	}
+
+	res, err := scanTxt(mainBuffer)
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
 }

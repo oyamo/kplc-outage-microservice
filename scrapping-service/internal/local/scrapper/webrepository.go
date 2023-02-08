@@ -1,5 +1,7 @@
 package scrapper
 
+import "github.com/oyamo/kplc-outage-microservice/scrapping-service/pkg/pdfutil"
+
 const (
 	LinkTypePDF  = LinkType("pdf")
 	LinkTypeLead = LinkType("lead")
@@ -19,4 +21,5 @@ type WebRepository interface {
 	GetLinks(page string) ([]Link, error)
 	GetLinksFromLead(lead string) ([]Link, error)
 	GenerateTmpPDF(url string) (tempPath string, err error)
+	GetBlackoutResultFromPdf(path string) (*pdfutil.BlackoutResult, error)
 }

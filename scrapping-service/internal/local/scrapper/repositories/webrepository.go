@@ -1,9 +1,11 @@
 package repositories
 
 import (
+	"errors"
 	"github.com/gocolly/colly"
 	"github.com/google/uuid"
 	"github.com/oyamo/kplc-outage-microservice/scrapping-service/internal/local/scrapper"
+	"github.com/oyamo/kplc-outage-microservice/scrapping-service/pkg/pdfutil"
 	"io"
 	"log"
 	"net/http"
@@ -17,18 +19,30 @@ const (
 type webrepo struct {
 }
 
+func (w webrepo) GetBlackoutResultFromPdf(path string) (*pdfutil.BlackoutResult, error) {
+	if path == "" {
+		return nil, errors.New("path cannot be empty")
+	}
+
+	result, err := pdfutil.ScanPDF(path)
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
 func (w webrepo) GenerateTmpPDF(url string) (tempPath string, err error) {
 	// Get a cache dir for temp storage
 
-	var tempDir string
-	if tempDir, err = os.UserCacheDir(); err != nil {
-		tempDir = os.TempDir()
-		if tempDir == "" {
-			tempDir = "." //use current directory
+	if tempPath, err = os.UserCacheDir(); err != nil {
+		tempPath = os.TempDir()
+		if tempPath == "" {
+			tempPath = "." //use current directory
 		}
 	}
 	// create an outstream
-	fileName := tempDir + "/" + uuid.NewString() + ".pdf"
+	fileName := tempPath + "/" + uuid.NewString() + ".pdf"
 	out, err := os.Create(fileName)
 	defer out.Close()
 	// since no special parameters are required as at the time of writing this code
@@ -40,7 +54,8 @@ func (w webrepo) GenerateTmpPDF(url string) (tempPath string, err error) {
 
 	defer resp.Body.Close()
 	io.Copy(out, resp.Body)
-	return "", nil
+	tempPath = fileName
+	return
 }
 
 func (w webrepo) GetLinksFromLead(lead string) ([]scrapper.Link, error) {
