@@ -10,5 +10,5 @@ type Config struct {
 type Worker interface {
 	DownloadUrls() error
 	DownloadPdfs() error
-	Schedule() error
+	Schedule() chan<- error
 }

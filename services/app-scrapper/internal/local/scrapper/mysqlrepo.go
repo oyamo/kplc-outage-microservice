@@ -1,9 +1,9 @@
 package scrapper
 
 type MysqlRepo interface {
-	AddUrl()
+	AddUrl(link Link)
 	GetUrlByID(id uint) *Link
-	GetUnCrawledUrl()
+	GetUnCrawledUrl() []Link
 
 	// Local Cache
 }
