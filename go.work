@@ -1,4 +1,8 @@
 go 1.19
 
 
-use proto
+use (
+	proto
+	./services/app-scrapper
+	./services/app-gateway
+)

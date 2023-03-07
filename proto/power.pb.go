@@ -337,7 +337,7 @@ type Outage struct {
 	TimeEnd   string   `protobuf:"bytes,3,opt,name=TimeEnd,proto3" json:"TimeEnd,omitempty"`
 	Area      string   `protobuf:"bytes,5,opt,name=Area,proto3" json:"Area,omitempty"`
 	County    string   `protobuf:"bytes,6,opt,name=County,proto3" json:"County,omitempty"`
-	Region    string   `protobuf:"bytes,7,opt,name=Region,proto3" json:"Region,omitempty"`
+	Region    string   `protobuf:"bytes,7,opt,name=Regions,proto3" json:"Regions,omitempty"`
 	Towns     []string `protobuf:"bytes,4,rep,name=towns,proto3" json:"towns,omitempty"`
 }
 
@@ -437,7 +437,7 @@ type OutageFilter struct {
 	Town      string  `protobuf:"bytes,8,opt,name=Town,proto3" json:"Town,omitempty"`
 	County    string  `protobuf:"bytes,9,opt,name=County,proto3" json:"County,omitempty"`
 	Area      string  `protobuf:"bytes,10,opt,name=Area,proto3" json:"Area,omitempty"`
-	Region    string  `protobuf:"bytes,11,opt,name=Region,proto3" json:"Region,omitempty"`
+	Region    string  `protobuf:"bytes,11,opt,name=Regions,proto3" json:"Regions,omitempty"`
 }
 
 func (x *OutageFilter) Reset() {

@@ -9,7 +9,7 @@ A microservice written in Golang with gRPC and JSON transport for notifying cust
 
 ## Databases
 - Redis - provide a cached copy of outages 
-- MySQL - provide permanent persistance
+- MongoDB- high availability, scalable and variety of data types
 
 ## Setup 
 ### GRPC and Protobuffer package dependencies

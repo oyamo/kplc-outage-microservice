@@ -1,0 +1,55 @@
+version: "3.8"
+
+services:
+  scrapping-service:
+    container_name: app-scrapper
+    build:
+      context: ./
+      dockerfile: services/app-scrapper/Dockerfile
+    restart: always
+    environment:
+      - PORT=${PORT}
+    healthcheck:
+      test: ping -c3 ah_network:${STREAMER_PORT}
+      interval: 10s
+      retries: 10
+  gateway-service:
+    container_name: app-gateway
+    build:
+      context: ./
+      dockerfile: services/app-gateway/Dockerfile
+    restart: always
+    environment:
+      - PORT=${PORT}
+    healthcheck:
+      test: ping -c3 ah_network:${STREAMER_PORT}
+      interval: 10s
+      retries: 10
+
+  notification-service:
+    container_name: app-notifications
+    build:
+      context: ./
+      dockerfile: services/app-notifications/Dockerfile
+    restart: always
+    environment:
+      - PORT=${PORT}
+    healthcheck:
+      test: ping -c3 ah_network:${STREAMER_PORT}
+      interval: 10s
+      retries: 10
+
+
+  # Third party services
+  mongodb:
+    image: mongodb/mongodb-community-server:6.0-ubi8
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=user
+      - MONGO_INITDB_ROOT_PASSWORD=pass
+    volumes:
+      - keniapowervol:/data/db
+
+
+volumes:
+  keniapowervol:
+    driver: local
