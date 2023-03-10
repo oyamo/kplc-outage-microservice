@@ -1,0 +1,8 @@
+title KPLC OUTAGE NOTIFICATION
+
+Alice -> Notification Service: Email & Location
+Notification Service -> Database: Fetch Upcoming blackouts for a user
+Notification Service --> Alice: Blackout Notification
+Scrapper Service --> KPLC Server: Fetch blackouts
+note over Scrapper Service,KPLC Server: Periodic Job
+Scrapper Service->>Database: Save Blackout
