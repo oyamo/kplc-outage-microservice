@@ -8,8 +8,7 @@ RUN CGO_ENABLED=1 GOOS=linux GOARCH=amd64;
 
 FROM golang-builder AS app-builder
 
-COPY ./scrapping-service/go.mod ./scrapping-service/go.sum /app/scrapping-service/
-COPY ./scrapping-service/ /app/scrapping-service/
+COPY  go.mod go.sum /app/app-scrapper/
 COPY .  /app
 
 WORKDIR /app

@@ -1,9 +1,83 @@
 openapi: 3.0.3
 info:
-  title: Title
-  description: Title
+  title: KPLC OUTAGE NOTIFIER
+  description: KPLC OUTAGE NOTIFIER
   version: 1.0.0
 servers:
-  - url: 'https'
+  - url: 'https://outage-notif-staging.oyamo.me'
+    description: "Staging Server"
+  - url: 'http://localhost:4010'
+    description: "Mocking server"
+  - url: 'https://outage-notif.oyamo.me'
+    description: "Production Server"
+
 paths:
-  
+   /subscribe:
+     post:
+       summary: Opt in
+       tags:
+         - Subscribe
+       operationId: subscribe
+       requestBody:
+         description: User details
+         content:
+           application/json:
+             schema:
+              properties:
+                email:
+                  type: string
+                  example: johndoe@gmail.com
+                region:
+                  type: string
+                  example: South Nyanza
+                county:
+                  type: number
+                  example: Homabay
+       responses:
+         '200':
+           description: Submision success
+           content:
+             application/json:
+               schema:
+                 properties:
+                   message:
+                     type: string
+                     example: Subscription Success
+                   code:
+                     type: string
+                     example: SUBSCRIPTION_SUCCESS
+   /unsubscribe/{subcsription-id}/:
+     get:
+       summary: Opt out
+       tags:
+         - Unsubscribe
+       parameters:
+         - in: path
+           name: subcsription-id
+           example: af7c1fe6-d669-414e-b066-e9733f0de7a8
+       responses:
+         '200':
+           description: Successfully opted out
+           content:
+              application/json:
+                schema:
+                  properties:
+                      message:
+                        type: string
+                        example: Unsubscription Success
+                      code:
+                        type: string
+                        example: UNSUBSCRIPTION_SUCCESS
+
+         '404':
+           description: Subscription Invalid
+           content:
+             application/json:
+               schema:
+                 properties:
+                   message:
+                    type: string
+                    example: Invalid Unsubscription
+                   code:
+                     type: string
+                     example: UNSUBSCRIPTION_FAIL

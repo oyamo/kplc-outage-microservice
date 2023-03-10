@@ -1,11 +1,11 @@
 version: "3.8"
 
 services:
-  scrapping-service:
+  app-scrapper:
     container_name: app-scrapper
     build:
-      context: ./
-      dockerfile: services/app-scrapper/Dockerfile
+      context: services/app-scrapper
+      dockerfile: Dockerfile
     restart: always
     environment:
       - PORT=${PORT}
@@ -13,11 +13,11 @@ services:
       test: ping -c3 ah_network:${STREAMER_PORT}
       interval: 10s
       retries: 10
-  gateway-service:
+  app-gateway:
     container_name: app-gateway
     build:
-      context: ./
-      dockerfile: services/app-gateway/Dockerfile
+      context: services/app-gateway
+      dockerfile: Dockerfile
     restart: always
     environment:
       - PORT=${PORT}
@@ -26,11 +26,11 @@ services:
       interval: 10s
       retries: 10
 
-  notification-service:
+  app-notifications:
     container_name: app-notifications
     build:
-      context: ./
-      dockerfile: services/app-notifications/Dockerfile
+      context: services/app-notifications
+      dockerfile: Dockerfile
     restart: always
     environment:
       - PORT=${PORT}
@@ -38,6 +38,22 @@ services:
       test: ping -c3 ah_network:${STREAMER_PORT}
       interval: 10s
       retries: 10
+
+
+  mock-server-v1:
+    container_name: mock-server-v1
+    build:
+      context: docs
+      dockerfile: Dockerfile
+    restart: always
+    environment:
+      - PORT=${PORT}
+    healthcheck:
+      test: ping -c3 ah_network:${STREAMER_PORT}
+      interval: 10s
+      retries: 10
+    volumes:
+      - ./api-v1-docs.yaml:/usr/src/prism/packages/cli/api-v1-docs.yaml
 
 
   # Third party services

@@ -5,4 +5,5 @@ use (
 	proto
 	./services/app-scrapper
 	./services/app-gateway
+	./pkg/model
 )
