@@ -7,7 +7,7 @@ import (
 
 type Blackouts struct {
 	pdfutil.BlackoutResult
-	Hash uint64 `bson:"hash"`
+	Hash int64 `bson:"hash"`
 }
 
 func (b *Blackouts) CalculateHash() error {
@@ -16,6 +16,6 @@ func (b *Blackouts) CalculateHash() error {
 		return err
 	}
 
-	b.Hash = hash
+	b.Hash = int64(hash)
 	return nil
 }

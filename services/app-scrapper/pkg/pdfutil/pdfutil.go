@@ -259,6 +259,8 @@ func parseDate(line string, curArea *BlackOutArea) (bool, error) {
 		}
 		curArea.TimeStart = t
 		curArea.TimeStop = t
+		curArea.TimeStartMillis = t.UnixMilli()
+		curArea.TimeStopMillis = t.UnixMilli()
 		return true, nil
 	}
 
@@ -286,6 +288,8 @@ func parseTime(line string, curArea *BlackOutArea) (bool, error) {
 
 		curArea.TimeStart = curArea.TimeStart.Add(t.Sub(time.Date(0, 1, 1, 0, 0, 0, 0, time.UTC)))
 		curArea.TimeStop = curArea.TimeStop.Add(t1.Sub(time.Date(0, 1, 1, 0, 0, 0, 0, time.UTC)))
+		curArea.TimeStartMillis = curArea.TimeStart.UnixMilli()
+		curArea.TimeStopMillis = curArea.TimeStop.UnixMilli()
 		return true, nil
 	}
 
