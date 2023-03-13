@@ -1,4 +1,4 @@
-module github.com/oyamo/kplc-outage-microservice/notification-service
+module github.com/oyamo/kplc-outage-microservice/services/app-notifications
 
 go 1.19
 

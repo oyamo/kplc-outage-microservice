@@ -1,4 +1,4 @@
-module github.com/oyamo/kplc-outage-microservice/gateway-service
+module github.com/oyamo/kplc-outage-microservice/services/app-gateway
 
 go 1.19
 

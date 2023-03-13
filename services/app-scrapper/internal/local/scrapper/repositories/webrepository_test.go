@@ -3,8 +3,8 @@ package repositories
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/oyamo/kplc-outage-microservice/scrapping-service/internal/local/scrapper"
-	"github.com/oyamo/kplc-outage-microservice/scrapping-service/pkg/pdfutil"
+	"github.com/oyamo/kplc-outage-microservice/services/app-scrapper/internal/local/scrapper"
+	"github.com/oyamo/kplc-outage-microservice/services/app-scrapper/pkg/pdfutil"
 	"reflect"
 	"testing"
 )

@@ -1,4 +1,4 @@
-module github.com/oyamo/kplc-outage-microservice/model
+module github.com/oyamo/kplc-outage-microservice/pkg/model
 
 go 1.19
 

@@ -3,7 +3,8 @@ go 1.19
 
 use (
 	proto
-	./services/app-scrapper
-	./services/app-gateway
-	./pkg/model
+	services/app-scrapper
+	services/app-gateway
+	pkg/model
+	services/app-notifications
 )

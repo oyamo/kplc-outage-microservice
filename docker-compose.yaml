@@ -4,15 +4,25 @@ services:
   app-scrapper:
     container_name: app-scrapper
     build:
-      context: services/app-scrapper
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: services/app-scrapper/Dockerfile
     restart: always
     environment:
-      - PORT=${PORT}
+      - MONGO_HOST=${MONGO_HOST}
+      - MONGO_PORT=${MONGO_PORT}
+      - MONGO_DATABASE=${MONGO_DATABASE}
+      - MONGO_PASSWORD=${MONGO_PASSWORD}
+      - MONGO_USER=${MONGO_USER}
     healthcheck:
-      test: ping -c3 ah_network:${STREAMER_PORT}
+      test: ping -c3 kplc_docker_net:${STREAMER_PORT}
       interval: 10s
       retries: 10
+    networks:
+      - kplc_docker_net
+    volumes:
+      - ./go.work:/app/go.work
+      - ./pkg/:/app/pkg/
+      - ./proto/:/app/proto/
   app-gateway:
     container_name: app-gateway
     build:
@@ -22,7 +32,7 @@ services:
     environment:
       - PORT=${PORT}
     healthcheck:
-      test: ping -c3 ah_network:${STREAMER_PORT}
+      test: ping -c3 kplc_docker_net:${STREAMER_PORT}
       interval: 10s
       retries: 10
 
@@ -35,7 +45,7 @@ services:
     environment:
       - PORT=${PORT}
     healthcheck:
-      test: ping -c3 ah_network:${STREAMER_PORT}
+      test: ping -c3 kplc_docker_net:${STREAMER_PORT}
       interval: 10s
       retries: 10
 
@@ -46,26 +56,34 @@ services:
       context: docs
       dockerfile: Dockerfile
     restart: always
-    environment:
-      - PORT=${PORT}
     healthcheck:
-      test: ping -c3 ah_network:${STREAMER_PORT}
+      test: ping -c3 kplc_docker_net:${STREAMER_PORT}
       interval: 10s
       retries: 10
-    volumes:
-      - ./api-v1-docs.yaml:/usr/src/prism/packages/cli/api-v1-docs.yaml
 
 
   # Third party services
-  mongodb:
-    image: mongodb/mongodb-community-server:6.0-ubi8
+  kplc_mongo:
+    container_name: kplc_mongo
+    build:
+      context: services/app-db
+      dockerfile: Dockerfile
     environment:
-      - MONGO_INITDB_ROOT_USERNAME=user
-      - MONGO_INITDB_ROOT_PASSWORD=pass
+      - MONGO_HOST=${MONGO_HOST}
+      - MONGO_PORT=${MONGO_PORT}
+      - MONGO_DATABASE=${MONGO_DATABASE}
+      - MONGO_PASSWORD=${MONGO_PASSWORD}
+      - MONGO_USER=${MONGO_USER}
     volumes:
       - keniapowervol:/data/db
+    networks:
+      - kplc_docker_net
 
 
 volumes:
   keniapowervol:
     driver: local
+    
+networks:
+  kplc_docker_net:
+    driver: bridge

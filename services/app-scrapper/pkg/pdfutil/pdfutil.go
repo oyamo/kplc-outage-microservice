@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"os"
 	"os/exec"
 	"reflect"
 	"regexp"
@@ -425,5 +426,9 @@ func ScanPDF(path string) (*BlackoutResult, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	// Delete the PDF
+	_ = os.Remove(path)
+
 	return res, nil
 }

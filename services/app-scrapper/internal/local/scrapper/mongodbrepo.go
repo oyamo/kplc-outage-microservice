@@ -1,9 +1,10 @@
 package scrapper
 
-type MysqlRepo interface {
-	AddUrl(link Link)
-	GetUrlByID(id uint) *Link
-	GetUnCrawledUrl() []Link
+import "github.com/oyamo/kplc-outage-microservice/pkg/model"
 
-	// Local Cache
+type MDBRepo interface {
+	AddUrl(link model.Url) error
+	UpdateLink(link model.Url) error
+	GetUnCrawledUrl() ([]model.Url, error)
+	SaveBlackoutResult(blackouts model.Blackouts) error
 }

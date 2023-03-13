@@ -6,18 +6,19 @@ RUN CGO_ENABLED=1 GOOS=linux GOARCH=amd64;
 
 
 FROM golang-builder AS app-builder
-
-COPY ./gateway-service/go.mod ./gateway-service/go.sum /app/gateway-service/
-COPY ./gateway-service/ /app/gateway-service/
-COPY .  /app
-
 WORKDIR /app
+
+
+COPY go.mod go.sum /app/
+# Download modules
 RUN go mod download
 
-RUN go build -o app-gateway-bin app-gateway/cmd/main/main.go
+# Compile the app
+COPY .  /app
+RUN go build -o app-gateway-bin cmd/main/main.go
 
 FROM app-builder AS prepare-bin
 
-COPY --from=app-builder /app/gateway-service-bin /usr/bin/gateway-service
+COPY --from=app-builder /app/app-gateway-bin /usr/bin/gateway-service
 
-ENTRYPOINT [" /usr/bin/gateway-service"]
+ENTRYPOINT ["/usr/bin/gateway-service"]

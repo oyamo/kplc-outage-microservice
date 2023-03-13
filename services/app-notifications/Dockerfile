@@ -6,19 +6,18 @@ RUN CGO_ENABLED=1 GOOS=linux GOARCH=amd64;
 
 
 FROM golang-builder AS app-builder
+WORKDIR /app/
 
-COPY ./notification-service/go.mod ./notification-service/go.sum /app/notification-service/
-COPY ./notification-service/ /app/notification-service/
-COPY . /app
-
-WORKDIR /app/notification-service
-
+COPY go.mod go.sum /app/
 RUN go mod download && go mod verify
 
-RUN go build -o app-notifications cmd/main/main.go
+# Compile application
+COPY . /app
+
+RUN go build -o app-notifications-bin cmd/main/main.go
 
 FROM app-builder AS prepare-bin
 
-COPY --from=app-builder /app/notification-service/notification-service /usr/bin/notification-service
+COPY --from=app-builder /app/app-notifications-bin /usr/bin/notification-service
 
-ENTRYPOINT [" /usr/bin/notification-service"]
+ENTRYPOINT ["/usr/bin/notification-service"]

@@ -1,6 +1,6 @@
 package scrapper
 
-import "github.com/oyamo/kplc-outage-microservice/scrapping-service/pkg/pdfutil"
+import "github.com/oyamo/kplc-outage-microservice/services/app-scrapper/pkg/pdfutil"
 
 const (
 	LinkTypePDF  = LinkType("pdf")

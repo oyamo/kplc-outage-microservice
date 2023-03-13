@@ -33,6 +33,12 @@ paths:
                 county:
                   type: number
                   example: Homabay
+                grace_period:
+                  type: number
+                  example: 2
+                grace_period_unit:
+                  type: string
+                  example: "days"
        responses:
          '200':
            description: Submision success
