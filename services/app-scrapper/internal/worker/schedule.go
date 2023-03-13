@@ -44,7 +44,7 @@ func ScheduleWorker(duration time.Duration, usecase scrapper.Usecase) {
 			}
 		}
 
-		if currWork > worker.WorkTypeGetURl {
+		if currWork == worker.WorkTypeGetURl {
 			currWork = worker.WorkTypeDownloadBlackouts
 		} else {
 			currWork = worker.WorkTypeGetURl
