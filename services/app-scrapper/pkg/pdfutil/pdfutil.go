@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"log"
 	"os"
 	"os/exec"
 	"reflect"
@@ -109,8 +108,6 @@ func oneColAlign(buffer bytes.Buffer) bytes.Buffer {
 			bottom.WriteByte('\n')
 			top.WriteString(segments[0])
 			top.WriteByte('\n')
-		} else {
-			log.Printf("%#v", segments)
 		}
 	}
 
@@ -256,7 +253,6 @@ func parseDate(line string, curArea *BlackOutArea) (bool, error) {
 		t, err := time.Parse("02.01.2006", dateStr)
 		if err != nil {
 			if t, err = time.Parse("02.01,2006", dateStr); err != nil {
-				log.Println("error parsing date", err)
 				return true, err
 			}
 		}
@@ -323,7 +319,6 @@ func scanTxt(buffer bytes.Buffer) (*BlackoutResult, error) {
 	for scanner.Scan() {
 		line := scanner.Text()
 		counter++
-		log.Println(line, counter)
 		if parseRegion(line, &curRegion, &result) ||
 			parseCounty(line, &curCounty, &curRegion) ||
 			parseArea(line, &curArea, &curCounty) {
@@ -347,7 +342,6 @@ func scanTxt(buffer bytes.Buffer) (*BlackoutResult, error) {
 		if parsedTime {
 			for scanner.Scan() {
 				line = scanner.Text()
-				log.Println(line)
 				// If we reach here, we have found a list of towns
 				towns := strings.Split(line, ", ")
 				curArea.Towns = append(curArea.Towns, towns...)
@@ -375,8 +369,6 @@ func scanTxt(buffer bytes.Buffer) (*BlackoutResult, error) {
 	if err := scanner.Err(); err != nil {
 		return nil, err
 	}
-
-	log.Printf("%+v", result)
 	return &result, nil
 }
 
@@ -393,13 +385,10 @@ func getPdfBytes(path string, page int) (bytes.Buffer, error) {
 	cmd.Stderr = &outErr
 	err := cmd.Start()
 	if err != nil {
-		log.Println(cmd.String())
 		return out, err
 	}
 
 	if err := cmd.Wait(); err != nil {
-		log.Println(cmd.String())
-		log.Println(outErr.String())
 		return out, err
 	}
 	return out, nil

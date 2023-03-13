@@ -57,7 +57,7 @@ func (m mongoDbRepo) GetUnCrawledUrl() ([]model.Url, error) {
 
 	// fetch uncrawled urls
 	var urlResult []model.Url
-	err := urlCollection.Find(context.Background(), bson.M{"scrapped": true}).All(&urlResult)
+	err := urlCollection.Find(context.Background(), bson.M{"scrapped": false}).All(&urlResult)
 	if err != nil {
 		return nil, err
 	}

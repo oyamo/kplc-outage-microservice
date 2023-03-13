@@ -7,7 +7,6 @@ import (
 	"github.com/oyamo/kplc-outage-microservice/services/app-scrapper/internal/local/scrapper"
 	"github.com/oyamo/kplc-outage-microservice/services/app-scrapper/pkg/pdfutil"
 	"io"
-	"log"
 	"net/http"
 	"os"
 )
@@ -111,7 +110,6 @@ func (w webrepo) GetLinks(page string) ([]scrapper.Link, error) {
 
 	err := c.Visit(page)
 	if err != nil {
-		log.Println(err)
 		return nil, err
 	}
 	return allLinks, nil
