@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 	"reflect"
@@ -375,10 +376,11 @@ func scanTxt(buffer bytes.Buffer) (*BlackoutResult, error) {
 func getPdfBytes(path string, page int) (bytes.Buffer, error) {
 	fpage := fmt.Sprintf("-f %d", page)
 	lpage := fmt.Sprintf("-l %d", page)
-	args := []string{"-layout", fpage, lpage, path, "-"}
+	args := []string{"-layout", fpage, lpage, "\"" + path + "\"", "-"}
 	cmd := exec.Command("pdftotext", args...)
 	cmdString := cmd.String()
 	cmd = exec.Command("sh", "-c", cmdString)
+	log.Printf(cmdString)
 	var out bytes.Buffer
 	var outErr bytes.Buffer
 	cmd.Stdout = &out
@@ -389,6 +391,7 @@ func getPdfBytes(path string, page int) (bytes.Buffer, error) {
 	}
 
 	if err := cmd.Wait(); err != nil {
+
 		return out, err
 	}
 	return out, nil
