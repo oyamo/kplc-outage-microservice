@@ -19,8 +19,10 @@ type County struct {
 }
 
 type BlackOutArea struct {
-	Name      string
-	TimeStart time.Time
-	TimeStop  time.Time
-	Towns     []string
+	Name            string
+	TimeStart       time.Time `bson:"-"`
+	TimeStartMillis int64
+	TimeStopMillis  int64
+	TimeStop        time.Time `bson:"-"`
+	Towns           []string
 }

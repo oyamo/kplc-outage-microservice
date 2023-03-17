@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+option go_package = "github.com/oyamo/kplc-outage-microservice/proto/notifications";
+
+message Subscriber {
+   string Email = 1;
+   string Region = 2;
+   string County = 3;
+}
+
+message SubscriptionID {
+   string UUID = 1;
+}
+
+message Response {
+   string Message = 1;
+   string error = 2;
+   int32 code = 3;
+}
+
+service Notifications {
+   rpc AddSubscriber(Subscriber) returns(Response);
+   rpc Unsubscribe(SubscriptionID) returns(Response);
+}

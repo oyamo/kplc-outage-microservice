@@ -22,8 +22,7 @@ func (m mongoDbRepo) UpdateLink(link model.Url) error {
 	urlCollection := m.Database.Collection(LinksCollectionName)
 
 	// update
-	err := urlCollection.UpdateOne(context.Background(), bson.M{"link": link.Link}, link)
-
+	err := urlCollection.UpdateOne(context.Background(), bson.M{"link": link.Link}, bson.M{"$set": link})
 	if err != nil {
 		return err
 	}
@@ -45,7 +44,7 @@ func (m mongoDbRepo) AddUrl(link model.Url) error {
 	}
 
 	// insert document
-	_, err = urlCollection.InsertOne(context.Background(), link)
+	_, err = urlCollection.InsertOne(context.Background(), &link)
 	if err != nil {
 		return err
 	}

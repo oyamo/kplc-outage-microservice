@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 	"reflect"
@@ -253,11 +254,14 @@ func parseDate(line string, curArea *BlackOutArea) (bool, error) {
 		t, err := time.Parse("02.01.2006", dateStr)
 		if err != nil {
 			if t, err = time.Parse("02.01,2006", dateStr); err != nil {
+				log.Printf(line)
 				return true, err
 			}
 		}
 		curArea.TimeStart = t
 		curArea.TimeStop = t
+		curArea.TimeStartMillis = t.UnixMilli()
+		curArea.TimeStopMillis = t.UnixMilli()
 		return true, nil
 	}
 
@@ -275,16 +279,20 @@ func parseTime(line string, curArea *BlackOutArea) (bool, error) {
 		}
 		t, err := time.Parse(time.Kitchen, timeStart)
 		if err != nil {
+			log.Printf(line)
 			return true, err
 		}
 
 		t1, err := time.Parse(time.Kitchen, timeStop)
 		if err != nil {
+			log.Printf(line)
 			return true, err
 		}
 
 		curArea.TimeStart = curArea.TimeStart.Add(t.Sub(time.Date(0, 1, 1, 0, 0, 0, 0, time.UTC)))
 		curArea.TimeStop = curArea.TimeStop.Add(t1.Sub(time.Date(0, 1, 1, 0, 0, 0, 0, time.UTC)))
+		curArea.TimeStartMillis = curArea.TimeStart.UnixMilli()
+		curArea.TimeStopMillis = curArea.TimeStop.UnixMilli()
 		return true, nil
 	}
 
@@ -375,7 +383,7 @@ func scanTxt(buffer bytes.Buffer) (*BlackoutResult, error) {
 func getPdfBytes(path string, page int) (bytes.Buffer, error) {
 	fpage := fmt.Sprintf("-f %d", page)
 	lpage := fmt.Sprintf("-l %d", page)
-	args := []string{"-layout", fpage, lpage, path, "-"}
+	args := []string{"-layout", fpage, lpage, "\"" + path + "\"", "-"}
 	cmd := exec.Command("pdftotext", args...)
 	cmdString := cmd.String()
 	cmd = exec.Command("sh", "-c", cmdString)
@@ -389,6 +397,7 @@ func getPdfBytes(path string, page int) (bytes.Buffer, error) {
 	}
 
 	if err := cmd.Wait(); err != nil {
+
 		return out, err
 	}
 	return out, nil

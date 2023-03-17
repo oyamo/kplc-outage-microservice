@@ -127,6 +127,7 @@ func (w worker) parsePdfs(errChan chan error, done chan bool) {
 			if err != nil {
 				errChan <- err
 			} else {
+				url.Scrapped = true
 				err = w.usecase.UpdateLink(url)
 				if err != nil {
 					errChan <- err

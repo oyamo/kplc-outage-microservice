@@ -47,7 +47,7 @@ func Test_pdfReader_scanTxt(t *testing.T) {
 }
 
 func TestScanPDF(t *testing.T) {
-	path := "/home/oyamo/.cache/3339f6b2-8c3b-4dd0-9f07-581405a0154f.pdf"
+	path := "/home/oyamo/Documents/Interruptions - 09.03.2023.pdf"
 	type args struct {
 		path string
 	}
