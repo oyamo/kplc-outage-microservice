@@ -52,15 +52,18 @@ paths:
                    code:
                      type: string
                      example: SUBSCRIPTION_SUCCESS
-   /unsubscribe/{subcsription-id}/:
+   /unsubscribe/{subscription-id}/:
      get:
        summary: Opt out
        tags:
          - Unsubscribe
        parameters:
          - in: path
-           name: subcsription-id
-           example: af7c1fe6-d669-414e-b066-e9733f0de7a8
+           name: subscription-id
+           required: true
+           schema:
+             type: string
+             example: af7c1fe6-d669-414e-b066-e9733f0de7a8
        responses:
          '200':
            description: Successfully opted out

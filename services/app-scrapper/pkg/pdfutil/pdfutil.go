@@ -254,6 +254,7 @@ func parseDate(line string, curArea *BlackOutArea) (bool, error) {
 		t, err := time.Parse("02.01.2006", dateStr)
 		if err != nil {
 			if t, err = time.Parse("02.01,2006", dateStr); err != nil {
+				log.Printf(line)
 				return true, err
 			}
 		}
@@ -278,11 +279,13 @@ func parseTime(line string, curArea *BlackOutArea) (bool, error) {
 		}
 		t, err := time.Parse(time.Kitchen, timeStart)
 		if err != nil {
+			log.Printf(line)
 			return true, err
 		}
 
 		t1, err := time.Parse(time.Kitchen, timeStop)
 		if err != nil {
+			log.Printf(line)
 			return true, err
 		}
 
@@ -384,7 +387,6 @@ func getPdfBytes(path string, page int) (bytes.Buffer, error) {
 	cmd := exec.Command("pdftotext", args...)
 	cmdString := cmd.String()
 	cmd = exec.Command("sh", "-c", cmdString)
-	log.Printf(cmdString)
 	var out bytes.Buffer
 	var outErr bytes.Buffer
 	cmd.Stdout = &out
