@@ -14,15 +14,12 @@ services:
       - MONGO_PASSWORD=${MONGO_PASSWORD}
       - MONGO_USER=${MONGO_USER}
     healthcheck:
-      test: ping -c3 kplc_docker_net:${STREAMER_PORT}
+      test: ps -ef | grep "scrapping-service"
       interval: 10s
       retries: 10
     networks:
       - kplc_docker_net
-    volumes:
-      - ./go.work:/app/go.work
-      - ./pkg/:/app/pkg/
-      - ./proto/:/app/proto/
+
   app-gateway:
     container_name: app-gateway
     build:
@@ -32,22 +29,41 @@ services:
     environment:
       - PORT=${PORT}
     healthcheck:
-      test: ping -c3 kplc_docker_net:${STREAMER_PORT}
+      test: ping -c3 kplc_docker_net:${PORT}
       interval: 10s
       retries: 10
+
+  rabbitmq3:
+    container_name: "rabbitmq"
+    image: rabbitmq:3.8-management-alpine
+    environment:
+      - RABBITMQ_DEFAULT_USER=${RABBIT_USER}
+      - RABBITMQ_DEFAULT_PASS=${RABBIT_PASS}
+    ports:
+      # AMQP protocol port
+      - '5672:5672'
+      # HTTP management UI
+      - '15672:15672'
 
   app-notifications:
     container_name: app-notifications
     build:
-      context: services/app-notifications
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: services/app-notifications/Dockerfile
     restart: always
     environment:
-      - PORT=${PORT}
+      - PORT=${NOTIFICATIONS_PORT}
+      - MONGO_HOST=${MONGO_HOST}
+      - MONGO_PORT=${MONGO_PORT}
+      - MONGO_DATABASE=${MONGO_DATABASE}
+      - MONGO_PASSWORD=${MONGO_PASSWORD}
+      - MONGO_USER=${MONGO_USER}
     healthcheck:
-      test: ping -c3 kplc_docker_net:${STREAMER_PORT}
+      test: ping -c3 kplc_docker_net:${PORT}
       interval: 10s
       retries: 10
+    networks:
+      - kplc_docker_net
 
 
   mock-server-v1:
@@ -57,7 +73,7 @@ services:
       dockerfile: Dockerfile
     restart: always
     healthcheck:
-      test: ping -c3 kplc_docker_net:${STREAMER_PORT}
+      test: ping -c3 kplc_docker_net:4010
       interval: 10s
       retries: 10
 
@@ -78,6 +94,10 @@ services:
       - keniapowervol:/data/db
     networks:
       - kplc_docker_net
+    healthcheck:
+      test: ping -c3 kplc_docker_net:${MONGO_PORT}
+      interval: 10s
+      retries: 10
 
 
 volumes:

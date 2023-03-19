@@ -2,7 +2,7 @@ package usecase
 
 import (
 	"github.com/oyamo/kplc-outage-microservice/pkg/model"
-	"github.com/oyamo/kplc-outage-microservice/services/app-notifications/internal/local/subscription"
+	"github.com/oyamo/kplc-outage-microservice/services/app-notifications/internal/core/subscription"
 )
 
 type usecase struct {

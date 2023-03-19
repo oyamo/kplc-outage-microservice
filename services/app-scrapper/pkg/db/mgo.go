@@ -1,4 +1,4 @@
-package databaseprovider
+package db
 
 import (
 	"context"

@@ -2,8 +2,8 @@ package worker
 
 import (
 	"github.com/oyamo/kplc-outage-microservice/pkg/model"
-	"github.com/oyamo/kplc-outage-microservice/services/app-scrapper/internal/local/scrapper"
-	"github.com/oyamo/kplc-outage-microservice/services/app-scrapper/internal/local/scrapper/repositories"
+	"github.com/oyamo/kplc-outage-microservice/services/app-scrapper/internal/core/scrapper"
+	"github.com/oyamo/kplc-outage-microservice/services/app-scrapper/internal/core/scrapper/repositories"
 	"github.com/oyamo/kplc-outage-microservice/services/app-scrapper/pkg/pdfutil"
 	"log"
 	"runtime"

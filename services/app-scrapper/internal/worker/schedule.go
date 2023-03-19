@@ -1,8 +1,8 @@
 package worker
 
 import (
-	"github.com/oyamo/kplc-outage-microservice/services/app-scrapper/internal/local/scrapper"
-	"github.com/oyamo/kplc-outage-microservice/services/app-scrapper/internal/local/scrapper/worker"
+	"github.com/oyamo/kplc-outage-microservice/services/app-scrapper/internal/core/scrapper"
+	"github.com/oyamo/kplc-outage-microservice/services/app-scrapper/internal/core/scrapper/worker"
 	"log"
 	"time"
 )

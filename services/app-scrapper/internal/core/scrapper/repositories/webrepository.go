@@ -4,7 +4,7 @@ import (
 	"errors"
 	"github.com/gocolly/colly"
 	"github.com/google/uuid"
-	"github.com/oyamo/kplc-outage-microservice/services/app-scrapper/internal/local/scrapper"
+	"github.com/oyamo/kplc-outage-microservice/services/app-scrapper/internal/core/scrapper"
 	"github.com/oyamo/kplc-outage-microservice/services/app-scrapper/pkg/pdfutil"
 	"io"
 	"net/http"
