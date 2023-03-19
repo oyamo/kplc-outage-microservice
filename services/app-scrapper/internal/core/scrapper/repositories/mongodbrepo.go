@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/oyamo/kplc-outage-microservice/pkg/model"
-	"github.com/oyamo/kplc-outage-microservice/services/app-scrapper/internal/local/scrapper"
+	"github.com/oyamo/kplc-outage-microservice/services/app-scrapper/internal/core/scrapper"
 	"github.com/qiniu/qmgo"
 	"go.mongodb.org/mongo-driver/bson"
 )

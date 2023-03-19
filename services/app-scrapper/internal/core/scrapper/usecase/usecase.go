@@ -1,14 +1,16 @@
 package usecase
 
 import (
+	"fmt"
 	"github.com/oyamo/kplc-outage-microservice/pkg/model"
-	"github.com/oyamo/kplc-outage-microservice/services/app-scrapper/internal/local/scrapper"
+	"github.com/oyamo/kplc-outage-microservice/services/app-scrapper/internal/core/scrapper"
 	"github.com/oyamo/kplc-outage-microservice/services/app-scrapper/pkg/pdfutil"
 )
 
 type useCase struct {
 	MongoRepo scrapper.MDBRepo
 	WebRepo   scrapper.WebRepository
+	RmqRepo   scrapper.RmqRepo
 }
 
 func (u useCase) UpdateLink(link model.Url) error {
@@ -73,12 +75,18 @@ func (u useCase) SaveBlackoutResult(blackouts model.Blackouts) error {
 	if err != nil {
 		return err
 	}
-	return err
+	// publish the
+	err = u.RmqRepo.PublishId(fmt.Sprintf("%d", blackouts.Hash))
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
-func NewUseCase(mongoRepo scrapper.MDBRepo, webRepo scrapper.WebRepository) scrapper.Usecase {
+func NewUseCase(mongoRepo scrapper.MDBRepo, webRepo scrapper.WebRepository, rmqrepo scrapper.RmqRepo) scrapper.Usecase {
 	return &useCase{
 		mongoRepo,
 		webRepo,
+		rmqrepo,
 	}
 }
