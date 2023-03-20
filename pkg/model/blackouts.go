@@ -2,14 +2,37 @@ package model
 
 import (
 	"github.com/mitchellh/hashstructure/v2"
-	"github.com/oyamo/kplc-outage-microservice/services/app-scrapper/pkg/pdfutil"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"github.com/qiniu/qmgo/field"
+	"time"
+)
+
+const (
+	BlackoutsCollection = "blackouts"
 )
 
 type Blackouts struct {
-	Id primitive.ObjectID
-	pdfutil.BlackoutResult
-	Hash int64 `bson:"hash"`
+	field.DefaultField `bson:",inline"`
+	Regions            []Region `bson:"regions"`
+	Hash               int64    `bson:"hash"`
+}
+
+type Region struct {
+	Name     string
+	Counties []County
+}
+
+type County struct {
+	Name  string
+	Areas []BlackOutArea
+}
+
+type BlackOutArea struct {
+	Name            string
+	TimeStart       time.Time `bson:"-"`
+	TimeStartMillis int64     `bson:"timeStartMillis"`
+	TimeStopMillis  int64     `bson:"timeStopMillis"`
+	TimeStop        time.Time `bson:"-"`
+	Towns           []string
 }
 
 func (b *Blackouts) CalculateHash() error {

@@ -6,6 +6,8 @@ message Subscriber {
    string Email = 1;
    string Region = 2;
    string County = 3;
+   string DeviceId = 4;
+   int32 i
 }
 
 message SubscriptionID {

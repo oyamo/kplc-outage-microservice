@@ -1,15 +1,17 @@
 package model
 
 import (
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"github.com/qiniu/qmgo/field"
 )
 
+const SubCollection = "subscriptions"
+
 type Subscription struct {
-	Id         primitive.ObjectID
-	Email      string `bson:"email"`
-	DeviceId   string `bson:"deviceId"`
-	Region     string `bson:"region"`
-	County     string `bson:"county"`
-	UUID       string `bson:"UUID"`
-	Subscribed bool   `bson:"subscribed"`
+	field.DefaultField `bson:",inline"`
+	Email              string `bson:"email"`
+	DeviceId           string `bson:"deviceId"`
+	Region             string `bson:"region"`
+	County             string `bson:"county"`
+	UUID               string `bson:"UUID"`
+	Subscribed         bool   `bson:"subscribed"`
 }
