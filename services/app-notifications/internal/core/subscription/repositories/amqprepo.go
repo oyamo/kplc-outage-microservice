@@ -1,22 +1,20 @@
 package repositories
 
 import (
-	"github.com/oyamo/kplc-outage-microservice/services/app-scrapper/internal/core/scrapper"
+	"github.com/oyamo/kplc-outage-microservice/services/app-notifications/internal/core/subscription"
 	"github.com/streadway/amqp"
 )
 
-const (
-	ExchangeName = "newblkout"
-	QueueName
-)
+const QueueName = "new-user"
 
-type rmqrepo struct {
+type amqprepo struct {
 	conn *amqp.Connection
 }
 
-func (r rmqrepo) PublishId(id string) error {
+func (a amqprepo) PublishUserId(userId string) error {
+
 	// open achannel
-	channel, err := r.conn.Channel()
+	channel, err := a.conn.Channel()
 	if err != nil {
 		return err
 	}
@@ -35,7 +33,7 @@ func (r rmqrepo) PublishId(id string) error {
 		QueueName,
 		false,
 		false,
-		amqp.Publishing{ContentType: "text/plain", Body: []byte(id)},
+		amqp.Publishing{ContentType: "text/plain", Body: []byte(userId)},
 	)
 
 	if err != nil {
@@ -44,8 +42,6 @@ func (r rmqrepo) PublishId(id string) error {
 	return nil
 }
 
-func NewRmqRepo(conn *amqp.Connection) scrapper.RmqRepo {
-	return &rmqrepo{
-		conn: conn,
-	}
+func NewAmqpRepo(conn *amqp.Connection) subscription.AmqpRepo {
+	return &amqprepo{conn: conn}
 }
