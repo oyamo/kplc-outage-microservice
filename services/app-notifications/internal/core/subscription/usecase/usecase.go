@@ -69,8 +69,11 @@ func (u *usecase) ProvisionNextJob(blackoutHash int64) error {
 }
 
 func (u *usecase) ProvisionNextJobForUser(uuid string) error {
-	//TODO implement me
-	panic("implement me")
+	futureBlackouts, err := u.mongoRepo.GetFutureBlackouts(0, SubscriberBufferSize)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (u *usecase) Subscribe(sub model.Subscription) error {
